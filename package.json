@@ -1,0 +1,31 @@
+{
+  "name": "botc-node",
+  "version": "1.0.0",
+  "description": "Node.js Blood on the Clocktower app",
+  "homepage": "https://github.com/bwmobilelabs/botc-node#readme",
+  "bugs": {
+    "url": "https://github.com/bwmobilelabs/botc-node/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bwmobilelabs/botc-node.git"
+  },
+  "license": "ISC",
+  "author": "Brandon Wallace",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "knex": "^3.2.9",
+    "pg": "^8.20.0"
+  }
+}
