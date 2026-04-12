@@ -1,0 +1,23 @@
+import 'dotenv/config';
+
+/**
+ * @type { import('knex').Knex.Config }
+ */
+const config = {
+  development: {
+    client: 'pg',
+    connection: {
+      host: process.env.PGHOST,
+      port: Number(process.env.PGPORT) || 5432,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD || undefined,
+      database: process.env.PGDATABASE,
+    },
+    migrations: {
+      directory: './migrations',
+      extension: 'js',
+    },
+  },
+};
+
+export default config;
