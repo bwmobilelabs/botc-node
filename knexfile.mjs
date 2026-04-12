@@ -15,7 +15,8 @@ const config = {
     },
     migrations: {
       directory: './migrations',
-      extension: 'js',
+      extension: 'mjs',
+      loadExtensions: ['.mjs'],
     },
   },
 };

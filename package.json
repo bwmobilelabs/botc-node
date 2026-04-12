@@ -16,7 +16,9 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "migrate:latest": "knex migrate:latest --knexfile knexfile.mjs"
+    "migrate:latest": "knex migrate:latest --knexfile knexfile.mjs",
+    "migrate:rollback": "knex migrate:rollback --knexfile knexfile.mjs",
+    "migrate:status": "knex migrate:status --knexfile knexfile.mjs"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

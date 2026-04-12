@@ -2,7 +2,7 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = async function(knex) {
+export async function up(knex) {
     await knex.schema.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
 
     await knex.schema.createTable('users', (table) => {
@@ -13,12 +13,12 @@ exports.up = async function(knex) {
         table.string('display_name', 50).nullable();
         table.timestamps(true, true);
     });
-};
+}
 
 /**
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.down = async function(knex) {
+export async function down(knex) {
     await knex.schema.dropTableIfExists('users');
-};
+}
