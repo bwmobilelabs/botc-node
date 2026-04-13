@@ -93,13 +93,13 @@ export const seed = async (knex) => {
       name: 'Organ Grinder',
       type: 'minion',
       ability: 'All players keep their eyes closed when voting and the vote tally is secret. Each night, choose if you are drunk until dusk.',
-      flavor_text: 'Round and round the handles go. The more you dance the less you know."'
+      flavor_text: 'Round and round the handles go. The more you dance the less you know.'
     },
     {
       name: 'Pit-Hag',
       type: 'minion',
       ability: 'Each night*, choose a player & a character they become (if not in play). If a Demon is made, deaths tonight are arbitrary.',
-      flavor_text: 'Round about the cauldron go; In the poison\'d entrails throw; Toad, that under cold stone; Days and nights has thirty-one; Sweated venom sleeping got; Boil thou first in the charmed pot."'
+      flavor_text: 'Round about the cauldron go; In the poison\'d entrails throw; Toad, that under cold stone; Days and nights has thirty-one; Sweated venom sleeping got; Boil thou first in the charmed pot.'
     },
     {
       name: 'Poisoner',
@@ -129,7 +129,7 @@ export const seed = async (knex) => {
       name: 'Summoner',
       type: 'minion',
       ability: 'You get 3 bluffs. On the 3rd night, choose a player: they become an evil Demon of your choice. [No Demon]',
-      flavor_text: 'Hail the guardians of the north; by my intellect, thou art cut. Hail the guardians of the east; by my will, thou art dominated. Hail the guardians of the south; by that which lies beyond, the mystery is revealed. Hail the guardians of the west; a shield in the darkness"'
+      flavor_text: 'Hail the guardians of the north; by my intellect, thou art cut. Hail the guardians of the east; by my will, thou art dominated. Hail the guardians of the south; by that which lies beyond, the mystery is revealed. Hail the guardians of the west; a shield in the darkness'
     },
     {
       name: 'Vizier',
@@ -165,7 +165,7 @@ export const seed = async (knex) => {
       name: 'Xaan',
       type: 'minion',
       ability: 'On night X, all Townsfolk are poisoned until dusk. [X Outsiders]',
-      flavor_text: 'Down they fall. One by one. By two, by three, by five."'
+      flavor_text: 'Down they fall. One by one. By two, by three, by five.'
     }
   ]);
 };
