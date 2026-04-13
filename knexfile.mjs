@@ -18,6 +18,11 @@ const config = {
       extension: 'mjs',
       loadExtensions: ['.mjs'],
     },
+    seeds: {
+      directory: './seeds',
+      extension: 'mjs',
+      loadExtensions: ['.mjs'],
+    },
   },
 };
 
