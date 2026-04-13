@@ -6,7 +6,7 @@ export const up = async (knex) => {
     await knex.schema.createTable('characters', (table) => {
         table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
         table.string('name', 100).notNullable().unique();
-        table.enu('type', ['townsfolk', 'outsider', 'minion', 'demon', 'traveler'], {
+        table.enu('type', ['townsfolk', 'outsider', 'minion', 'demon', 'traveller'], {
             useNative: true,
             enumName: 'character_type'
         }).notNullable();
