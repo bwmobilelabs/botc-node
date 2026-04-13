@@ -1,6 +1,6 @@
 export const seed = async (knex) => {
   // Deletes ALL existing entries
-  await knex('characters').del();
+  await knex('characters').where('type', 'townsfolk').del();
 
   // Inserts seed entries
   await knex('characters').insert([
