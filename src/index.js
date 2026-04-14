@@ -2,7 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { pool } from './config/db.js';
+
+//Routes
+import scriptsRouter from './routes/scripts.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,15 +18,8 @@ app.use(
 );
 app.use(express.json());
 
-app.get('/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ ok: true, db: 'ok' });
-  } catch (err) {
-    console.error(err);
-    res.status(503).json({ ok: false, db: 'error' });
-  }
-});
+// Routes
+app.use('/api/scripts', scriptsRouter);
 
 app.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`);
