@@ -33,4 +33,26 @@ router.post('/login', async (req, res) => {
 	}
 });
 
+router.post('/register', async (req, res) => {
+	const { username, email, password } = req.body;
+	try {
+		const hashed = await bcrypt.hash(password, 12);
+		const id = await db('users').insert([
+			{
+				username,
+				email,
+				password_hash: hashed
+			}
+		]).returning('id');
+		res.json({ id })
+	} catch (err) {
+		if (err.code === '23505') {
+			// duplicate username or email
+			return res.status(409).json({ error: 'Username or email already in use' });
+		}
+		console.log(err);
+		res.status(500).json({ error: 'Failed to perform auth' });
+	}
+});
+
 export default router;
