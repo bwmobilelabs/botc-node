@@ -44,7 +44,11 @@ export const seed = async (knex) => {
 
   const tbRows = await knex('characters').select('id', 'name').whereIn('name', tbCharNames);
 
-  const mappedTB = tbRows.map(row => ({
+  const orderedRows = tbCharNames.map(name =>
+    tbRows.find(row => row.name === name)
+  );
+
+  const mappedTB = orderedRows.map(row => ({
     script_id: tb.id,
     character_id: row.id
   }));
