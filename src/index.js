@@ -6,6 +6,7 @@ import helmet from 'helmet';
 //Routes
 import scriptsRouter from './routes/scripts.js';
 import usersRouter from './routes/users.js';
+import authRouter from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use(express.json());
 // Routes
 app.use('/api/scripts', scriptsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
 
 app.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`);
