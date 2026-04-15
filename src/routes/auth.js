@@ -81,7 +81,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 	try {
 		const data = await db('users')
 			.select('username', 'email', 'display_name', 'created_at')
-			.where('id', id);
+			.where('id', id).first();
 		res.json(data);
 	} catch (err) {
 		console.log(err);
