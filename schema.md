@@ -1,6 +1,6 @@
 # Database schema
 
-This document reflects the tables and types defined in **migrations only** (order: users → characters → scripts).
+This document reflects the tables and types defined in **migrations only** (order: users → characters → scripts → `refresh_tokens`).
 
 ## Extensions
 
@@ -84,11 +84,26 @@ Many-to-many link between scripts and catalog characters (composite primary key)
 
 ---
 
+### `refresh_tokens`
+
+Stored refresh-session rows for JWT refresh-token rotation and revocation (hash of the refresh JWT, not the raw token).
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | `UUID` | **PK**, default `gen_random_uuid()` | |
+| `user_id` | `UUID` | **NOT NULL**, **FK** → `users(id)` **ON DELETE CASCADE** | |
+| `token_hash` | `VARCHAR(255)` | **NOT NULL**, **UNIQUE** | Hash of refresh token for lookup |
+| `expires_at` | `TIMESTAMPTZ` | **NOT NULL** | |
+| `created_at` | `TIMESTAMPTZ` | **NOT NULL**, default now | |
+
+---
+
 ## Relationships
 
 ```mermaid
 erDiagram
     users ||--o{ scripts : owns
+    users ||--o{ refresh_tokens : has
     scripts ||--o{ script_characters : contains
     characters ||--o{ script_characters : "referenced by"
     users {
@@ -109,7 +124,13 @@ erDiagram
         uuid script_id PK_FK
         uuid character_id PK_FK
     }
+    refresh_tokens {
+        uuid id PK
+        uuid user_id FK
+        varchar token_hash UK
+    }
 ```
 
 - **`users` → `scripts`**: one user, many scripts (`scripts.owner_id`).
+- **`users` → `refresh_tokens`**: one user, many refresh sessions (`refresh_tokens.user_id`); deleting a user removes their refresh rows (`ON DELETE CASCADE`).
 - **`scripts` ↔ `characters`**: many-to-many via **`script_characters`**; deleting a script or character removes its junction rows (`ON DELETE CASCADE`).
