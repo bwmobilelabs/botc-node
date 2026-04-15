@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import db from '../config/db.js';
 import bcrypt from 'bcrypt';
-import { signAccessToken } from '../utils/jwt.js';
+import cookieParser from 'cookie-parser';
+import { hashRefreshToken, signAccessToken, signRefreshToken } from '../utils/jwt.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
+/**
+ * SELECT password_hash, id FROM users
+ * WHERE username = username
+ */
 router.post('/login', async (req, res) => {
 	const { username, password } = req.body;
 	try {
@@ -23,13 +28,36 @@ router.post('/login', async (req, res) => {
 		if (match) {
 			const user_id = rows[0].id
 			const accessToken = signAccessToken(user_id);
+
+			const { refreshToken, expires_at } = signRefreshToken(user_id);
+			const token_hash = hashRefreshToken(refreshToken);
+
+			await db('refresh_tokens').insert([
+				{
+					user_id,
+					token_hash,
+					expires_at
+				}
+			]);
+
+			res.cookie(
+				'refresh',
+				refreshToken,
+				{
+					httpOnly: true,
+					secure: process.env.NODE_ENV === 'production',
+					sameSite: 'lax',
+					path: '/api/auth',
+					maxAge: 604800000
+				}
+			);
 			res.json({
 				user: {
 					id: user_id,
 					username
 				},
 				accessToken
-			})
+			});
 			return;
 		} else {
 			res.status(401).json({ error: 'Username or password is incorrect' });
@@ -40,6 +68,10 @@ router.post('/login', async (req, res) => {
 	}
 });
 
+/**
+ * INSERT INTO users (username, email, password_hash)
+ * VALUES (username, email, hashed)
+ */
 router.post('/register', async (req, res) => {
 	const { username, email, password } = req.body;
 	try {
@@ -53,13 +85,37 @@ router.post('/register', async (req, res) => {
 		]).returning('id');
 		const user_id = obj[0].id
 		const accessToken = signAccessToken(user_id);
+
+		const { refreshToken, expires_at } = signRefreshToken(user_id);
+		const token_hash = hashRefreshToken(refreshToken);
+
+		await db('refresh_tokens').insert([
+			{
+				user_id,
+				token_hash,
+				expires_at
+			}
+		]);
+
+		res.cookie(
+			'refresh',
+			refreshToken,
+			{
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'lax',
+				path: '/api/auth',
+				maxAge: 604800000
+			}
+		);
+
 		res.json({
 			user: {
 				id: user_id,
 				username
 			},
 			accessToken
-		})
+		});
 	} catch (err) {
 		if (err.code === '23505') {
 			// duplicate username or email
