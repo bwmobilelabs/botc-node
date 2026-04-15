@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../config/db.js';
 import bcrypt from 'bcrypt';
 import { signAccessToken } from '../utils/jwt.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -66,6 +67,25 @@ router.post('/register', async (req, res) => {
 		}
 		console.log(err);
 		res.status(500).json({ error: 'Failed to perform auth' });
+	}
+});
+
+// Get user data from username
+/**
+ * SELECT username, email, display_name, create_at
+ * FROM users
+ * WHERE id = :id (from token)
+ */
+router.get('/me', authMiddleware, async (req, res) => {
+	const id = req.user_id;
+	try {
+		const data = await db('users')
+			.select('username', 'email', 'display_name', 'created_at')
+			.where('id', id);
+		res.json(data);
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: 'Failed to get user data' });
 	}
 });
 
