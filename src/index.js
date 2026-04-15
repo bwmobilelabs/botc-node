@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 //Routes
 import scriptsRouter from './routes/scripts.js';
@@ -11,6 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet());
+app.use(cookieParser());
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || true,

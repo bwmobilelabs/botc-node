@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import db from '../config/db.js';
 import bcrypt from 'bcrypt';
-import cookieParser from 'cookie-parser';
-import { hashRefreshToken, signAccessToken, signRefreshToken } from '../utils/jwt.js';
+import {
+	hashRefreshToken,
+	signAccessToken,
+	signRefreshToken,
+	verifyRefreshToken,
+	refreshCookieOptions
+} from '../utils/jwt.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -44,10 +49,7 @@ router.post('/login', async (req, res) => {
 				'refresh',
 				refreshToken,
 				{
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'lax',
-					path: '/api/auth',
+					...refreshCookieOptions,
 					maxAge: 604800000
 				}
 			);
@@ -101,10 +103,7 @@ router.post('/register', async (req, res) => {
 			'refresh',
 			refreshToken,
 			{
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				path: '/api/auth',
+				...refreshCookieOptions,
 				maxAge: 604800000
 			}
 		);
@@ -143,6 +142,83 @@ router.get('/me', authMiddleware, async (req, res) => {
 		console.log(err);
 		res.status(500).json({ error: 'Failed to get user data' });
 	}
+});
+
+router.post('/refresh', async (req, res) => {
+	const refresh_token = req.cookies.refresh;
+	if (!refresh_token) {
+		res.clearCookie('refresh', refreshCookieOptions);
+		return res.status(401).json({ error: 'Unauthorized' });
+	}
+	try {
+		// Check token is valid
+		const payload = verifyRefreshToken(refresh_token);
+		if (payload.typ !== 'refresh') {
+			res.clearCookie('refresh', refreshCookieOptions);
+			return res.status(401).json({ error: 'Unauthorized' });
+		}
+		// Check token is in table
+		const hashed = hashRefreshToken(refresh_token);
+		const returned_token = await db('refresh_tokens')
+			.select('*')
+			.where('token_hash', hashed).first();
+
+		if (!returned_token) {
+			res.clearCookie('refresh', refreshCookieOptions);
+			return res.status(401).json({ error: 'Unauthorized' });
+		}
+		// Check if token is expired
+		const now = new Date();
+		if (returned_token.expires_at < now) {
+			await db('refresh_tokens')
+				.where('id', returned_token.id)
+				.del();
+			res.clearCookie('refresh', refreshCookieOptions);
+			return res.status(401).json({ error: 'Unauthorized' });
+		}
+		// Refresh token
+		const user_id = payload.sub
+		const accessToken = signAccessToken(user_id);
+
+		const { refreshToken, expires_at } = signRefreshToken(user_id);
+		const token_hash = hashRefreshToken(refreshToken);
+
+		await db.transaction(async (trx) => {
+			// Insert new
+			await trx('refresh_tokens').insert([
+				{
+					user_id,
+					token_hash,
+					expires_at
+				}
+			]);
+			// Revoke old
+			await trx('refresh_tokens')
+				.where('id', returned_token.id)
+				.del();
+
+		});
+
+		res.cookie(
+			'refresh',
+			refreshToken,
+			{
+				...refreshCookieOptions,
+				maxAge: 604800000
+			}
+		);
+
+		return res.json({
+			user_id,
+			accessToken
+		});
+
+	} catch (err) {
+		console.log(err);
+		res.clearCookie('refresh', refreshCookieOptions);
+		return res.status(401).json({ error: 'Unauthorized' });
+	}
+
 });
 
 export default router;
