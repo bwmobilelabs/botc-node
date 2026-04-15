@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../config/db.js';
 import bcrypt from 'bcrypt';
+import { signAccessToken } from '../utils/jwt.js';
 
 const router = Router();
 
@@ -8,7 +9,7 @@ router.post('/login', async (req, res) => {
 	const { username, password } = req.body;
 	try {
 		const rows = await db('users')
-			.select('password_hash')
+			.select('password_hash', 'id')
 			.where('username', username);
 
 		const storedHash = rows[0]?.password_hash;
@@ -19,9 +20,14 @@ router.post('/login', async (req, res) => {
 		let match = await bcrypt.compare(password, storedHash);
 
 		if (match) {
-			// Deal with auth token later, just checking hashing now.
+			const user_id = rows[0].id
+			const accessToken = signAccessToken(user_id);
 			res.json({
-				logged_in: true
+				user: {
+					id: user_id,
+					username
+				},
+				accessToken
 			})
 			return;
 		} else {
@@ -37,14 +43,22 @@ router.post('/register', async (req, res) => {
 	const { username, email, password } = req.body;
 	try {
 		const hashed = await bcrypt.hash(password, 12);
-		const id = await db('users').insert([
+		const obj = await db('users').insert([
 			{
 				username,
 				email,
 				password_hash: hashed
 			}
 		]).returning('id');
-		res.json({ id })
+		const user_id = obj[0].id
+		const accessToken = signAccessToken(user_id);
+		res.json({
+			user: {
+				id: user_id,
+				username
+			},
+			accessToken
+		})
 	} catch (err) {
 		if (err.code === '23505') {
 			// duplicate username or email
