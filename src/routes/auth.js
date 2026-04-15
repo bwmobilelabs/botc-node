@@ -221,4 +221,24 @@ router.post('/refresh', async (req, res) => {
 
 });
 
+router.post('/logout', async (req, res) => {
+	const refresh_token = req.cookies.refresh;
+	if (!refresh_token) {
+		res.clearCookie('refresh', refreshCookieOptions);
+		return res.sendStatus(204);
+	}
+	try {
+		const hashed = hashRefreshToken(refresh_token);
+		await db('refresh_tokens')
+			.where('token_hash', hashed)
+			.del();
+		res.clearCookie('refresh', refreshCookieOptions);
+		return res.sendStatus(204);
+	} catch (err) {
+		console.log(err);
+		res.clearCookie('refresh', refreshCookieOptions);
+		return res.sendStatus(204);
+	}
+});
+
 export default router;
