@@ -24,6 +24,49 @@ router.get('/', async (req, res) => {
 	}
 });
 
+// Insert new script
+/**
+ * INSERT INTO scripts (owner_id, name, description, is_official)
+ * VALUES (user_id, script_title, description, false) # Only seeded scripts are official
+ * 
+ * SELECT id, name FROM characters
+ * WHERE name in (character_1, character_2, etc)
+ * 
+ * INSERT INTO script_characters (script_id, character_id)
+ * VALUES (script_id, character_id)
+ */
+router.post('/', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { script_title, description, character_names } = req.body;
+	try {
+		const [script] = await db('scripts')
+			.insert({
+				owner_id: user_id,
+				name: script_title,
+				description,
+				is_official: false
+			})
+			.returning('id');
+
+		const rows = await db('characters').select('id', 'name').whereIn('name', character_names);
+		const orderedRows = character_names.map((n) => rows.find((row) => row.name === n));
+		const scriptCharacters = orderedRows.map((row) => ({
+			script_id: script.id,
+			character_id: row.id
+		}));
+
+		await db('script_characters').insert(scriptCharacters);
+
+		res.json({
+			message: 'Script Created',
+			script_id: script.id
+		});
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Failed to create script.' });
+	}
+});
+
 // List all scripts created by a user
 /**
  * SELECT scripts.id, name, description, is_official, username AS author
@@ -99,46 +142,44 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-// Insert new script
-/**
- * INSERT INTO scripts (owner_id, name, description, is_official)
- * VALUES (user_id, script_title, description, false) # Only seeded scripts are official
- * 
- * SELECT id, name FROM characters
- * WHERE name in (character_1, character_2, etc)
- * 
- * INSERT INTO script_characters (script_id, character_id)
- * VALUES (script_id, character_id)
- */
-router.post('/create_script', authMiddleware, async (req, res) => {
-	const user_id = req.user_id;
+router.put('/:id', async (req, res) => {
+	const { id } = req.params
 	const { script_title, description, character_names } = req.body;
-	try {
-		const [script] = await db('scripts')
-			.insert({
-				owner_id: user_id,
-				name: script_title,
-				description,
-				is_official: false
-			})
-			.returning('id');
 
+	try {
+		console.log(character_names);
 		const rows = await db('characters').select('id', 'name').whereIn('name', character_names);
 		const orderedRows = character_names.map((n) => rows.find((row) => row.name === n));
 		const scriptCharacters = orderedRows.map((row) => ({
-			script_id: script.id,
+			script_id: id,
 			character_id: row.id
 		}));
+		console.log(scriptCharacters);
 
-		await db('script_characters').insert(scriptCharacters);
+		await db.transaction(async (trx) => {
+			const script = await trx('scripts')
+				.where('id', id)
+				.update({
+					name: script_title,
+					description: description,
+					updated_at: db.fn.now()
+				});
+			if (!script) {
+				throw new Error("Script not found");
+			}
+			await trx('script_characters')
+				.where('script_id', id)
+				.del();
 
-		res.json({
-			message: 'Script Created',
-			script_id: script.id
+			await trx('script_characters').insert(scriptCharacters);
 		});
+		return res.json({
+			message: 'Script updated',
+			script_id: id
+		})
 	} catch (err) {
-		console.log(err);
-		res.status(500).json({ message: 'Failed to create script.' });
+		console.log(err)
+		res.status(500).json({ error: 'Failed to update script' });
 	}
 });
 
