@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 //Routes
 import scriptsRouter from './routes/scripts.js';
 import authRouter from './routes/auth.js';
+import characterRouter from './routes/characters.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.use(express.json());
 // Routes
 app.use('/api/scripts', scriptsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/characters', characterRouter);
 
 app.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`);
