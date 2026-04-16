@@ -192,4 +192,24 @@ router.put('/:id', authMiddleware, async (req, res) => {
 	}
 });
 
+router.delete('/:id', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params
+
+	try {
+		// First see if user owns script they are trying to delete
+		const script_owner = await db('scripts').select('owner_id').where('id', id).first();
+		if (script_owner.owner_id !== user_id) {
+			return res.status(403).json({ message: 'Unauthorized' });
+		}
+		await db('scripts')
+			.where('id', id)
+			.del();
+		res.sendStatus(204);
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: 'Failed to delete script' });
+	}
+});
+
 export default router;
