@@ -50,9 +50,10 @@ router.post('/', authMiddleware, async (req, res) => {
 
 		const rows = await db('characters').select('id', 'name').whereIn('name', character_names);
 		const orderedRows = character_names.map((n) => rows.find((row) => row.name === n));
-		const scriptCharacters = orderedRows.map((row) => ({
+		const scriptCharacters = orderedRows.map((row, index) => ({
 			script_id: script.id,
-			character_id: row.id
+			character_id: row.id,
+			sort_order: index
 		}));
 
 		await db('script_characters').insert(scriptCharacters);
@@ -114,7 +115,8 @@ router.get('/:id', async (req, res) => {
 			.join('users as u', 'u.id', 's.owner_id')
 			.join('script_characters as sc', 'sc.script_id', 's.id')
 			.join('characters as c', 'c.id', 'sc.character_id')
-			.where('s.id', id);
+			.where('s.id', id)
+			.orderBy('sc.sort_order');
 		// Shape response
 		const script = rows.reduce((acc, row) => {
 			if (!acc) {
@@ -147,14 +149,13 @@ router.put('/:id', async (req, res) => {
 	const { script_title, description, character_names } = req.body;
 
 	try {
-		console.log(character_names);
 		const rows = await db('characters').select('id', 'name').whereIn('name', character_names);
 		const orderedRows = character_names.map((n) => rows.find((row) => row.name === n));
-		const scriptCharacters = orderedRows.map((row) => ({
+		const scriptCharacters = orderedRows.map((row, index) => ({
 			script_id: id,
-			character_id: row.id
+			character_id: row.id,
+			sort_order: index
 		}));
-		console.log(scriptCharacters);
 
 		await db.transaction(async (trx) => {
 			const script = await trx('scripts')

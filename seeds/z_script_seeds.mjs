@@ -10,9 +10,10 @@ async function insertScriptWithCharacters(knex, { ownerId, name, description, ch
 
   const rows = await knex('characters').select('id', 'name').whereIn('name', charNames);
   const orderedRows = charNames.map((n) => rows.find((row) => row.name === n));
-  const scriptCharacters = orderedRows.map((row) => ({
+  const scriptCharacters = orderedRows.map((row, index) => ({
     script_id: script.id,
-    character_id: row.id
+    character_id: row.id,
+    sort_order: index
   }));
 
   await knex('script_characters').insert(scriptCharacters);
