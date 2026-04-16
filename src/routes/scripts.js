@@ -4,7 +4,7 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
-// List all scripts
+// List 20 scripts
 /**
  * SELECT scripts.id, name, description, is_official, username AS author
  * FROM scripts
@@ -144,11 +144,19 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
+// Update a specific script
+router.put('/:id', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
 	const { id } = req.params
 	const { script_title, description, character_names } = req.body;
 
 	try {
+		// First see if user owns script they are trying to edit
+		const script_owner = await db('scripts').select('owner_id').where('id', id).first();
+		if (script_owner.owner_id !== user_id) {
+			return res.status(403).json({ message: 'Unauthorized' });
+		}
+
 		const rows = await db('characters').select('id', 'name').whereIn('name', character_names);
 		const orderedRows = character_names.map((n) => rows.find((row) => row.name === n));
 		const scriptCharacters = orderedRows.map((row, index) => ({
