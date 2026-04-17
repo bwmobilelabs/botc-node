@@ -89,7 +89,7 @@ router.post('/join', authMiddleware, async (req, res) => {
 
 router.post('/:id/leave', authMiddleware, async (req, res) => {
 	const user_id = req.user_id;
-	const { id } = req.params
+	const { id } = req.params;
 
 	try {
 		const deleted = await db('game_players')
@@ -105,6 +105,38 @@ router.post('/:id/leave', authMiddleware, async (req, res) => {
 		console.log(err);
 		return res.status(500).json({ error: 'Failed to leave game' });
 	}
-})
+});
+
+// Update game, storyteller only
+router.patch('/:id', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params;
+	const { script_id, name, phase, day_number, status } = req.body;
+
+	try {
+		const game = await db('games')
+			.where('storyteller_id', user_id)
+			.first();
+
+		if (!game) {
+			return res.status(401).json({ message: 'You are not the storyteller of this game' });
+		}
+		await db('games')
+			.where('id', id)
+			.update({
+				active_script_id: script_id ?? game.active_script_id,
+				name: name ?? game.name,
+				status: status ?? game.status,
+				phase: phase ?? game.phase,
+				day_number: day_number ?? game.day_number,
+				updated_at: db.fn.now()
+			});
+
+		return res.status(200).json({ message: 'Game updated' });
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to update scripts' });
+	}
+});
 
 export default router;
