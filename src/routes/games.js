@@ -61,4 +61,50 @@ router.post('/', authMiddleware, async (req, res) => {
 	}
 });
 
+router.post('/join', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { invite_code } = req.body;
+
+	try {
+		const game = await db('games')
+			.where('invite_code', invite_code)
+			.select('id', 'name')
+			.first();
+
+		if (!game) {
+			return res.sendStatus(404);
+		}
+
+		await db('game_players').insert({
+			game_id: game.id,
+			user_id: user_id
+		});
+
+		return res.status(200).json({ message: `Joined game ${game.name}` });
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to join game' });
+	}
+});
+
+router.post('/:id/leave', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params
+
+	try {
+		const deleted = await db('game_players')
+			.where({ 'game_id': id, 'user_id': user_id })
+			.del();
+
+		if (deleted === 0) {
+			return res.sendStatus(404);
+		}
+
+		return res.status(200).json({ message: 'You have left the game' });
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to leave game' });
+	}
+})
+
 export default router;
