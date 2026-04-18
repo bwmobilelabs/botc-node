@@ -115,7 +115,10 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 
 	try {
 		const game = await db('games')
-			.where('storyteller_id', user_id)
+			.where({
+				'storyteller_id': user_id,
+				'id': id
+			})
 			.first();
 
 		if (!game) {
@@ -135,7 +138,62 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 		return res.status(200).json({ message: 'Game updated' });
 	} catch (err) {
 		console.log(err);
-		return res.status(500).json({ error: 'Failed to update scripts' });
+		return res.status(500).json({ error: 'Failed to update game' });
+	}
+});
+
+router.patch("/:gameID/player/:playerID", authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { gameID, playerID } = req.params;
+	const { character_id, seat_order, is_alive, has_ghost_vote, vote_used, notes } = req.body;
+
+	try {
+		const game = await db('games')
+			.where({
+				'storyteller_id': user_id,
+				'id': gameID
+			})
+			.first();
+
+		if (!game) {
+			return res.status(401).json({ message: 'You are not the storyteller of this game' });
+		}
+
+		const player = await db('game_players')
+			.where({
+				'game_id': gameID,
+				'user_id': playerID
+			})
+			.first();
+
+		if (!player) {
+			return res.status(404).json({ message: 'Player not found' });
+		}
+
+		await db('game_players')
+			.where({
+				'game_id': gameID,
+				'user_id': playerID
+			})
+			.update({
+				character_id: character_id ?? player.character_id,
+				seat_order: seat_order ?? player.seat_order,
+				is_alive: is_alive ?? player.is_alive,
+				has_ghost_vote: has_ghost_vote ?? player.has_ghost_vote,
+				vote_used: vote_used ?? player.vote_used,
+				notes: notes ?? player.notes,
+				updated_at: db.fn.now()
+			});
+
+		return res.status(200).json({ message: 'Player updated' });
+
+	} catch (err) {
+		if (err.code === '23505' && err.constraint === 'game_players_game_id_seat_order_unique') {
+			return res.status(403).json({ error: 'The seat you tried to assign this player is already occupied' });
+		}
+
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to update game player' });
 	}
 });
 
