@@ -197,4 +197,68 @@ router.patch("/:gameID/player/:playerID", authMiddleware, async (req, res) => {
 	}
 });
 
+router.get('/:id', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params;
+
+	try {
+		const game = await db('games')
+			.where('id', id)
+			.first();
+
+		const storyteller = await db('users')
+			.where('id', game.storyteller_id)
+			.first();
+
+		const players = await db('game_players as gp')
+			.select('username', 'display_name', 'seat_order as seat', 'is_alive', 'has_ghost_vote', 'vote_used', 'notes', 'c.name as character_name')
+			.leftJoin('users as u', 'u.id', 'gp.user_id')
+			.leftJoin('characters as c', 'gp.character_id', 'c.id')
+			.where('game_id', id)
+			.orderBy('seat_order', 'asc');
+
+		console.log(players);
+
+
+		const isStoryteller = game.storyteller_id === user_id;
+
+		if (isStoryteller) {
+			return res.status(200).json({
+				game: {
+					name: game.name,
+					status: game.status,
+					day: `${game.phase} ${game.day_number}`,
+					storyteller: storyteller.username,
+					script_id: game.active_script_id
+				},
+				players: players
+			})
+		} else {
+			return res.status(200).json({
+				game: {
+					name: game.name,
+					status: game.status,
+					day: `${game.phase} ${game.day_number}`,
+					storyteller: storyteller.username,
+					script_id: game.active_script_id
+				},
+				players: players.map(p => ({
+					username: p.username,
+					display_name: p.display_name,
+					seat: p.seat,
+					is_alive: p.is_alive,
+					...(!p.is_alive && { has_ghost_vote: p.has_ghost_vote }),
+				}))
+			})
+		}
+
+
+		return res.sendStatus(200);
+
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to fetch game data' });
+	}
+});
+
 export default router;
