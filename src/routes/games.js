@@ -217,9 +217,6 @@ router.get('/:id', authMiddleware, async (req, res) => {
 			.where('game_id', id)
 			.orderBy('seat_order', 'asc');
 
-		console.log(players);
-
-
 		const isStoryteller = game.storyteller_id === user_id;
 
 		if (isStoryteller) {
@@ -252,12 +249,35 @@ router.get('/:id', authMiddleware, async (req, res) => {
 			})
 		}
 
-
 		return res.sendStatus(200);
 
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({ error: 'Failed to fetch game data' });
+	}
+});
+
+// End a game
+router.delete('/:id', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params;
+
+	try {
+		const deleted = await db('games')
+			.where({
+				'storyteller_id': user_id,
+				'id': id
+			})
+			.del();
+
+		if (deleted === 0) {
+			return res.status(403).json({ message: 'Game could not be deleted. Make sure the game is active and that you are the storyteller.' });
+		}
+
+		res.sendStatus(204);
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ error: 'Failed to delete game' });
 	}
 });
 
