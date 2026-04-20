@@ -104,6 +104,7 @@ router.get('/:id', async (req, res) => {
 		// Get all rows
 		const rows = await db('scripts as s')
 			.select(
+				'c.id',
 				's.name',
 				's.description',
 				's.is_official',
@@ -130,6 +131,7 @@ router.get('/:id', async (req, res) => {
 			}
 
 			acc.characters.push({
+				id: row.id,
 				name: row.character_name,
 				type: row.type,
 				ability: row.ability

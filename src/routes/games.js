@@ -142,6 +142,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 	}
 });
 
+// Update player, storyteller only
 router.patch("/:gameID/player/:playerID", authMiddleware, async (req, res) => {
 	const user_id = req.user_id;
 	const { gameID, playerID } = req.params;
@@ -278,6 +279,38 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({ error: 'Failed to delete game' });
+	}
+});
+
+// Get reminder tokens for script
+router.get('/:id/reminders', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params;
+
+	try {
+		const rows = await db('games as g')
+			.select('rtd.id', 'rtd.text', 'rtd.character_id', 'c.name', 'sc.sort_order')
+			.join('script_characters as sc', 'sc.script_id', 'g.active_script_id')
+			.join('characters as c', 'c.id', 'sc.character_id')
+			.join('reminder_token_definitions as rtd', 'rtd.character_id', 'c.id')
+			.where({
+				'g.id': id,
+				'g.storyteller_id': user_id
+			})
+			.orderBy('sc.sort_order', 'asc')
+			.orderBy('c.name', 'asc')
+			.orderBy('rtd.text', 'asc');
+
+		console.log(rows);
+		if (!rows || rows.length === 0) {
+			return res.status(401).json({ message: 'You are not the storyteller of this game' });
+		}
+
+		return res.status(200).json(rows);
+
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Failed to get reminder tokens for script' });
 	}
 });
 
