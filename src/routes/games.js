@@ -354,4 +354,23 @@ router.post('/:id/reminders', authMiddleware, async (req, res) => {
 	}
 });
 
+router.delete('/:game_id/reminders', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { game_id } = req.params;
+	const { reminder_token_id } = req.body;
+
+	try {
+		await db('game_reminder_tokens')
+			.where({
+				'id': reminder_token_id,
+				'game_id': game_id
+			})
+			.del();
+		return res.sendStatus(200);
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Failed to delete reminder token' });
+	}
+})
+
 export default router;
