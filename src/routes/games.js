@@ -212,7 +212,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 			.first();
 
 		const players = await db('game_players as gp')
-			.select('username', 'display_name', 'seat_order as seat', 'is_alive', 'has_ghost_vote', 'vote_used', 'notes', 'c.name as character_name')
+			.select('gp.id', 'username', 'display_name', 'seat_order as seat', 'is_alive', 'has_ghost_vote', 'vote_used', 'notes', 'c.name as character_name')
 			.leftJoin('users as u', 'u.id', 'gp.user_id')
 			.leftJoin('characters as c', 'gp.character_id', 'c.id')
 			.where('game_id', id)
@@ -221,6 +221,23 @@ router.get('/:id', authMiddleware, async (req, res) => {
 		const isStoryteller = game.storyteller_id === user_id;
 
 		if (isStoryteller) {
+			const tokens = await db('game_reminder_tokens as grt')
+				.where('grt.game_id', id)
+				.leftJoin('reminder_token_definitions as rtd', 'grt.reminder_def_id', 'rtd.id')
+
+			const remindersByPlayer = new Map();
+			for (const t of tokens) {
+				const list = remindersByPlayer.get(t.target_player_id) ?? [];
+				console.log(t)
+				list.push({
+					id: t.id,
+					reminder_def_id: t.reminder_def_id,
+					text: t.text ?? t.custom_text,
+					created_at: t.created_at
+				});
+				remindersByPlayer.set(t.target_player_id, list);
+			}
+
 			return res.status(200).json({
 				game: {
 					name: game.name,
@@ -229,7 +246,10 @@ router.get('/:id', authMiddleware, async (req, res) => {
 					storyteller: storyteller.username,
 					script_id: game.active_script_id
 				},
-				players: players
+				players: players.map((p) => ({
+					...p,
+					reminder: remindersByPlayer.get(p.id) ?? []
+				}))
 			})
 		} else {
 			return res.status(200).json({
@@ -311,6 +331,26 @@ router.get('/:id/reminders', authMiddleware, async (req, res) => {
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({ message: 'Failed to get reminder tokens for script' });
+	}
+});
+
+router.post('/:id/reminders', authMiddleware, async (req, res) => {
+	const user_id = req.user_id;
+	const { id } = req.params;
+	const { reminder_token_id, player_id, text } = req.body;
+
+	try {
+		await db('game_reminder_tokens')
+			.insert({
+				game_id: id,
+				target_player_id: player_id,
+				reminder_def_id: reminder_token_id,
+				custom_text: text ?? null
+			})
+		return res.sendStatus(200);
+	} catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: `Failed to place reminder token ${reminder_token_id}` })
 	}
 });
 
